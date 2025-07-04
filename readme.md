@@ -25,7 +25,7 @@ A beautiful, fast, and powerful web-based tool for converting LaTeX documents to
 
 ## 🚀 Live Demo
 
-[Visit the live application](https://vercel.com/alexodavies-projects/latex-2-md)
+[Visit the live application](https://latex-2-md.vercel.app/)
 
 ## 📖 Supported LaTeX Features
 
