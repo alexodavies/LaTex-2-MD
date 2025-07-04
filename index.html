@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX to Markdown Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 3px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-section:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .upload-section.dragover {
+            border-color: #2196f3;
+            background: #bbdefb;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .upload-subtext {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            box-shadow: 0 5px 15px rgba(149, 165, 166, 0.3);
+        }
+
+        .btn.secondary:hover {
+            box-shadow: 0 8px 25px rgba(149, 165, 166, 0.4);
+        }
+
+        .editor-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .editor-panel {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .editor-header {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-content {
+            height: 500px;
+            position: relative;
+        }
+
+        #latexInput, #markdownOutput {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            background: #fafafa;
+        }
+
+        #latexInput {
+            background: #f8f9fa;
+        }
+
+        #markdownOutput {
+            background: #f0f8ff;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #e9ecef;
+            padding: 15px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .file-info {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #155724;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #155724;
+            font-size: 0.9em;
+        }
+
+        .conversion-status {
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .conversion-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .conversion-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .editor-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LaTeX to Markdown Converter</h1>
+            <p>Convert your LaTeX documents to clean Markdown with ease</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your .tex file here or click to browse</div>
+                <div class="upload-subtext">Supports .tex files up to 10MB</div>
+                <input type="file" id="fileInput" accept=".tex" />
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+
+            <div class="conversion-status" id="conversionStatus"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Converting your LaTeX file...</div>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn" onclick="convertText()">Convert to Markdown</button>
+                <button class="btn secondary" onclick="clearAll()">Clear All</button>
+                <button class="btn" onclick="downloadMarkdown()">Download MD</button>
+            </div>
+
+            <div class="editor-section">
+                <div class="editor-panel">
+                    <div class="editor-header">
+                        <span>LaTeX Input</span>
+                        <span id="latexStats">0 chars</span>
+                    </div>
+                    <div class="editor-content">
+                        <textarea id="latexInput" placeholder="Paste your LaTeX content here or upload a .tex file..."></textarea>
+                    </div>
+                </div>
+
+                <div class="editor-panel">
+                    <div class="editor-header">
+                        <span>Markdown Output</span>
+                        <span id="markdownStats">0 chars</span>
+                    </div>
+                    <div class="editor-content">
+                        <textarea id="markdownOutput" placeholder="Converted Markdown will appear here..." readonly></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TexToMarkdownConverter {
+            constructor() {
+                this.patterns = [
+                    // Document structure
+                    [/\\documentclass\{[^}]*\}/g, ''],
+                    [/\\usepackage\{[^}]*\}/g, ''],
+                    [/\\begin\{document\}/g, ''],
+                    [/\\end\{document\}/g, ''],
+                    
+                    // Sections
+                    [/\\section\{([^}]*)\}/g, '# $1'],
+                    [/\\subsection\{([^}]*)\}/g, '## $1'],
+                    [/\\subsubsection\{([^}]*)\}/g, '### $1'],
+                    [/\\paragraph\{([^}]*)\}/g, '#### $1'],
+                    [/\\subparagraph\{([^}]*)\}/g, '##### $1'],
+                    
+                    // Text formatting
+                    [/\\textbf\{([^}]*)\}/g, '**$1**'],
+                    [/\\textit\{([^}]*)\}/g, '*$1*'],
+                    [/\\emph\{([^}]*)\}/g, '*$1*'],
+                    [/\\texttt\{([^}]*)\}/g, '`$1`'],
+                    [/\\underline\{([^}]*)\}/g, '<u>$1</u>'],
+                    
+                    // Grouped font formatting (with braces)
+                    [/\{\\bfseries\s+([^}]*)\}/g, '**$1**'],
+                    [/\{\\itshape\s+([^}]*)\}/g, '*$1*'],
+                    [/\{\\slshape\s+([^}]*)\}/g, '*$1*'],
+                    [/\{\\ttfamily\s+([^}]*)\}/g, '`$1`'],
+                    [/\{\\sffamily\s+([^}]*)\}/g, '**$1**'], // Sans-serif → bold (distinctive font)
+                    [/\{\\rmfamily\s+([^}]*)\}/g, '*$1*'], // Roman → italic (subtle emphasis)
+                    [/\{\\scshape\s+([^}]*)\}/g, '**$1**'], // Small caps → bold (emphasis)
+                    [/\{\\normalfont\s+([^}]*)\}/g, '$1'],
+                    [/\{\\mdseries\s+([^}]*)\}/g, '$1'],
+                    [/\{\\upshape\s+([^}]*)\}/g, '$1'],
+                    
+                    // Font families (standalone commands)
+                    [/\\sffamily\s*/g, ''],
+                    [/\\rmfamily\s*/g, ''],
+                    [/\\ttfamily\s*/g, ''],
+                    [/\\bfseries\s*/g, '**'],
+                    [/\\mdseries\s*/g, ''],
+                    [/\\itshape\s*/g, '*'],
+                    [/\\upshape\s*/g, ''],
+                    [/\\slshape\s*/g, '*'],
+                    [/\\scshape\s*/g, ''],
+                    [/\\normalfont\s*/g, ''],
+                    
+                    // Font size commands (remove them as Markdown doesn't have direct equivalents)
+                    [/\\tiny\s*/g, ''],
+                    [/\\scriptsize\s*/g, ''],
+                    [/\\footnotesize\s*/g, ''],
+                    [/\\small\s*/g, ''],
+                    [/\\normalsize\s*/g, ''],
+                    [/\\large\s*/g, ''],
+                    [/\\Large\s*/g, ''],
+                    [/\\LARGE\s*/g, ''],
+                    [/\\huge\s*/g, ''],
+                    [/\\Huge\s*/g, ''],
+                    
+                    // Lists
+                    [/\\begin\{itemize\}/g, ''],
+                    [/\\end\{itemize\}/g, ''],
+                    [/\\begin\{enumerate\}/g, ''],
+                    [/\\end\{enumerate\}/g, ''],
+                    [/\\item\s*/g, '- '],
+                    
+                    // Math
+                    [/\\begin\{equation\}/g, '$$'],
+                    [/\\end\{equation\}/g, '$$'],
+                    [/\\begin\{align\}/g, '$$'],
+                    [/\\end\{align\}/g, '$$'],
+                    [/\\begin\{displaymath\}/g, '$$'],
+                    [/\\end\{displaymath\}/g, '$$'],
+                    
+                    // Links and references
+                    [/\\href\{([^}]*)\}\{([^}]*)\}/g, '[$2]($1)'],
+                    [/\\url\{([^}]*)\}/g, '<$1>'],
+                    [/\\ref\{([^}]*)\}/g, '[$1](#$1)'],
+                    [/\\label\{([^}]*)\}/g, '<a name="$1"></a>'],
+                    
+                    // Code blocks
+                    [/\\begin\{verbatim\}/g, '```'],
+                    [/\\end\{verbatim\}/g, '```'],
+                    [/\\begin\{lstlisting\}/g, '```'],
+                    [/\\end\{lstlisting\}/g, '```'],
+                    
+                    // Quotes
+                    [/\\begin\{quote\}/g, '> '],
+                    [/\\end\{quote\}/g, ''],
+                    [/\\begin\{quotation\}/g, '> '],
+                    [/\\end\{quotation\}/g, ''],
+                    
+                    // Special characters
+                    [/\\&/g, '&'],
+                    [/\\%/g, '%'],
+                    [/\\#/g, '#'],
+                    [/\\_/g, '_'],
+                    [/\\\\/g, '\n'],
+                    [/~/g, ' '],
+                    
+                    // Clean up remaining LaTeX commands
+                    [/\\[a-zA-Z]+\{[^}]*\}/g, ''],
+                    [/\\[a-zA-Z]+/g, ''],
+                ];
+            }
+
+            convert(text) {
+                let result = text;
+                
+                // Apply all patterns
+                for (const [pattern, replacement] of this.patterns) {
+                    result = result.replace(pattern, replacement);
+                }
+                
+                // Clean up whitespace
+                result = result.replace(/\n\s*\n\s*\n/g, '\n\n');
+                result = result.replace(/[ \t]+/g, ' ');
+                result = result.trim();
+                
+                return result;
+            }
+        }
+
+        // Initialize converter
+        const converter = new TexToMarkdownConverter();
+
+        // DOM elements
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const latexInput = document.getElementById('latexInput');
+        const markdownOutput = document.getElementById('markdownOutput');
+        const conversionStatus = document.getElementById('conversionStatus');
+        const loading = document.getElementById('loading');
+        const latexStats = document.getElementById('latexStats');
+        const markdownStats = document.getElementById('markdownStats');
+
+        // Event listeners
+        uploadSection.addEventListener('click', () => fileInput.click());
+        uploadSection.addEventListener('dragover', handleDragOver);
+        uploadSection.addEventListener('dragleave', handleDragLeave);
+        uploadSection.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        latexInput.addEventListener('input', updateStats);
+        markdownOutput.addEventListener('input', updateStats);
+
+        // Drag and drop handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.tex')) {
+                showStatus('Please select a .tex file', 'error');
+                return;
+            }
+
+            // Validate file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('File size must be less than 10MB', 'error');
+                return;
+            }
+
+            // Show file info
+            fileName.textContent = file.name;
+            fileSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+            fileInfo.classList.add('show');
+
+            // Read file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                latexInput.value = e.target.result;
+                updateStats();
+                showStatus('File loaded successfully! Click "Convert to Markdown" to proceed.', 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        function convertText() {
+            const latexText = latexInput.value.trim();
+            
+            if (!latexText) {
+                showStatus('Please enter some LaTeX content to convert', 'error');
+                return;
+            }
+
+            // Show loading
+            loading.style.display = 'block';
+            conversionStatus.style.display = 'none';
+
+            // Simulate processing time for better UX
+            setTimeout(() => {
+                try {
+                    const markdown = converter.convert(latexText);
+                    markdownOutput.value = markdown;
+                    updateStats();
+                    showStatus('Conversion completed successfully!', 'success');
+                } catch (error) {
+                    showStatus('Error during conversion: ' + error.message, 'error');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            }, 500);
+        }
+
+        function clearAll() {
+            latexInput.value = '';
+            markdownOutput.value = '';
+            fileInfo.classList.remove('show');
+            conversionStatus.style.display = 'none';
+            fileInput.value = '';
+            updateStats();
+        }
+
+        function downloadMarkdown() {
+            const markdown = markdownOutput.value;
+            if (!markdown.trim()) {
+                showStatus('No markdown content to download', 'error');
+                return;
+            }
+
+            // Try modern download approach first
+            try {
+                const blob = new Blob([markdown], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'converted.md';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showStatus('Markdown file downloaded successfully!', 'success');
+            } catch (error) {
+                // Fallback: copy to clipboard and show instructions
+                try {
+                    navigator.clipboard.writeText(markdown).then(() => {
+                        showStatus('Download not available in this environment. Content copied to clipboard! Paste it into a text editor and save as .md file.', 'success');
+                    }).catch(() => {
+                        // Final fallback: show content in new window
+                        const newWindow = window.open('', '_blank');
+                        newWindow.document.write(`
+                            <html>
+                            <head><title>Converted Markdown</title></head>
+                            <body>
+                                <h2>Your Converted Markdown</h2>
+                                <p>Copy the content below and save it as a .md file:</p>
+                                <textarea style="width:100%; height:80vh; font-family:monospace; padding:10px;" readonly>${markdown}</textarea>
+                            </body>
+                            </html>
+                        `);
+                        showStatus('Content opened in new window. Copy and save as .md file.', 'success');
+                    });
+                } catch (clipboardError) {
+                    // Ultimate fallback: show in alert
+                    alert('Download not available. Here\'s your markdown content:\n\n' + markdown.substring(0, 1000) + (markdown.length > 1000 ? '...\n\n(Content truncated in alert)' : ''));
+                    showStatus('Content shown in alert. For full content, copy from the output panel.', 'success');
+                }
+            }
+        }
+
+        function showStatus(message, type) {
+            conversionStatus.textContent = message;
+            conversionStatus.className = `conversion-status ${type}`;
+            conversionStatus.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                conversionStatus.style.display = 'none';
+            }, 5000);
+        }
+
+        function updateStats() {
+            const latexLength = latexInput.value.length;
+            const markdownLength = markdownOutput.value.length;
+            
+            latexStats.textContent = `${latexLength.toLocaleString()} chars`;
+            markdownStats.textContent = `${markdownLength.toLocaleString()} chars`;
+        }
+
+        // Initialize stats
+        updateStats();
+    </script>
+</body>
+</html>
